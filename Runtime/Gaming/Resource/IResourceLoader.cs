@@ -1,6 +1,7 @@
 namespace Gaming.Resource
 {
     using Gaming;
+    using Gaming.Runnable;
     using System;
 
     /// <summary>
@@ -8,7 +9,7 @@ namespace Gaming.Resource
     /// </summary>
     public interface IResourceLoader : IRefrence
     {
-        void LoadAssetAsync(string AssetUrl, Action<IResContext> callback);
+        IRunnable<IResContext> LoadAssetAsync(string AssetUrl);
         void Release(IResContext handle);
     }
 }

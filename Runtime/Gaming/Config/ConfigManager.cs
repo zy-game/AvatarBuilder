@@ -43,7 +43,7 @@
             {
                 throw new Exception("the config type cannot be abstract or interface");
             }
-            byte[] bytes = GamingService.File.ReadData(fileName);
+            byte[] bytes = Services.File.ReadData(fileName);
             return (IConfig)Newtonsoft.Json.JsonConvert.DeserializeObject(Encoding.UTF8.GetString(bytes), configType);
         }
         public void Dispose()

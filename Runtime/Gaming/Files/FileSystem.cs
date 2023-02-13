@@ -5,22 +5,18 @@
     using UnityEngine;
     using Extension;
     using System.Collections;
+    using UnityEngine.Networking;
+    using System.IO;
 
     public class FileSystem : Singleton<FileSystem>, IRefrence
     {
-        public string GetFilePath(string fileName)
+        public byte[] Read(string filePath, bool isDecryption, bool isDecomperss)
         {
-            return Application.persistentDataPath + "/" + fileName.GetMd5();
-        }
-
-        public byte[] Read(string fileName, bool isDecryption, bool isDecomperss)
-        {
-            fileName = GetFilePath(fileName);
-            if (!Exist(fileName))
+            if (!Exist(filePath))
             {
                 return Array.Empty<byte>();
             }
-            byte[] bytes = System.IO.File.ReadAllBytes(fileName);
+            byte[] bytes = System.IO.File.ReadAllBytes(filePath);
             if (isDecryption)
             {
                 //todo 解密
@@ -36,23 +32,23 @@
 
         }
 
-        internal bool Exist(string fileName)
-        {
-            fileName = GetFilePath(fileName);
-            return System.IO.File.Exists(fileName);
-        }
+        internal bool Exist(string filePath) => System.IO.File.Exists(filePath);
 
-        internal bool Delete(string fileName)
+        internal bool Delete(string filePath)
         {
-            System.IO.File.Delete(GetFilePath(fileName));
-            return Exist(fileName);
-        }
-
-        internal void Write(string fileName, byte[] bytes, bool isEncryption, bool isComperss)
-        {
-            if (!Delete(fileName))
+            if (!Exist(filePath))
             {
-                throw new Exception("the file is already exist! name:" + fileName);
+                return true;
+            }
+            System.IO.File.Delete(filePath);
+            return Exist(filePath);
+        }
+
+        internal void Write(string filePath, byte[] bytes, bool isEncryption, bool isComperss)
+        {
+            if (!Delete(filePath))
+            {
+                throw new Exception("the file is already exist! name:" + filePath);
             }
             if (isEncryption)
             {
@@ -62,47 +58,46 @@
             {
                 //todo 压缩
             }
-            System.IO.File.WriteAllBytes(GetFilePath(fileName), bytes);
+            string dir = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+            System.IO.File.WriteAllBytes(filePath, bytes);
         }
 
-        internal bool Copy(string fileName, string desPath)
+        internal bool Copy(string scrPath, string desPath)
         {
-            if (!Exist(fileName))
+            if (!Exist(scrPath))
             {
                 return false;
             }
             System.IO.File.Delete(desPath);
-            System.IO.File.Copy(GetFilePath(fileName), desPath);
+            System.IO.File.Copy(scrPath, desPath);
             return System.IO.File.Exists(desPath);
         }
 
-        internal bool Move(string fileName, string desPath)
+        internal bool Move(string scrPath, string desPath)
         {
-            if (!Exist(fileName))
+            if (!Exist(scrPath))
             {
                 return false;
             }
             System.IO.File.Delete(desPath);
-            System.IO.File.Move(GetFilePath(fileName), desPath);
+            System.IO.File.Move(scrPath, desPath);
             return System.IO.File.Exists(desPath);
         }
 
-        internal IRunnable<byte[]> ReadAsync(string fileName, bool isDecryption, bool isDecomperss)
+        internal IRunnable<byte[]> ReadAsync(string scrPath, bool isDecryption, bool isDecomperss)
         {
             throw new NotImplementedException();
         }
 
-        internal IRunnable<T> ReadAsync<T>(string fileName, bool isDecryption, bool isDecomperss)
+        internal IRunnable WriteAsync(string filePath, byte[] bytes, bool isEncryption, bool isComperss)
         {
-            RunnableAsync<T> internalRunnable = GamingService.Refrence.Require<RunnableAsync<T>>();
-            internalRunnable.Execute<ReadableFileExecuter<T>>(fileName);
-            return internalRunnable;
-        }
-
-        internal IRunnable WriteAsync(string fileName, byte[] bytes, bool isEncryption, bool isComperss)
-        {
-            RunnableSync commonRunnable = GamingService.Refrence.Require<RunnableSync>();
-            commonRunnable.Execute<WriteableFileExecuter>();
+            ScheduleRunnable commonRunnable = Services.Refrence.Require<ScheduleRunnable>();
+            WriteableFileExecuter writeableFileExecuter = Services.Refrence.Require<WriteableFileExecuter>();
+            writeableFileExecuter.Execute(commonRunnable, filePath, bytes, isEncryption, isComperss);
             return commonRunnable;
         }
     }
@@ -111,27 +106,55 @@
     {
         public void Dispose()
         {
-            throw new NotImplementedException();
+
         }
 
-        public IEnumerator Execute(params object[] args)
+        public void Execute(IRunnable runnable, params object[] args)
         {
-            throw new NotImplementedException();
+            string filePath = (string)args[0];
+            byte[] bytes = (byte[])args[1];
+            bool isEncryption = (bool)args[2];
+            bool isComperss = (bool)args[2];
+            Services.File.WriteData(filePath, bytes, isEncryption, isComperss);
         }
     }
 
-    public class ReadableFileExecuter<T> : IExecuter<T>
+    public class ReadableFileExecuter : IExecuter<byte[]>
     {
-        public T target => throw new NotImplementedException();
-
-        public void Dispose()
+        public byte[] target
         {
-            throw new NotImplementedException();
+            get;
+            private set;
         }
 
-        public IEnumerator Execute(params object[] args)
+        private IEnumerator enumerator;
+        public void Dispose()
         {
-            throw new NotImplementedException();
+            Services.MonoBehaviour.StopCoroutine(enumerator);
+        }
+
+        public void Execute(IRunnable<byte[]> runnable, params object[] args)
+        {
+            string filePath = (string)args[0];
+            bool isEncryption = (bool)args[1];
+            bool isComperss = (bool)args[2];
+            enumerator = GetEnumerator(runnable, filePath, isEncryption, isComperss);
+            Services.MonoBehaviour.StartCoroutine(enumerator);
+        }
+
+        private IEnumerator GetEnumerator(IRunnable<byte[]> runnable, string filePath, bool isEncryption, bool isComperss)
+        {
+            UnityWebRequest request = UnityWebRequest.Get(filePath);
+            yield return request.SendWebRequest();
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                target = Array.Empty<byte>();
+            }
+            else
+            {
+                target = request.downloadHandler.data;
+            }
+            yield return runnable.Execute(target);
         }
     }
 }

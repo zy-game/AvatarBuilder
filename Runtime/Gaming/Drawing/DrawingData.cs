@@ -4,7 +4,6 @@
     using System;
     using System.IO;
     using UnityEngine;
-    using static Codice.CM.Common.CmCallContext;
 
     public sealed class DrawingData
     {
@@ -101,11 +100,11 @@
                 {
                     for (int j = 0; j < (int)burshSize; j++)
                     {
-                        _tempCache.SetPixel((int)(x * this.width + j), (int)(y * height + i), Color.clear);
+                        this._tempCache.SetPixel((int)(x * this.width + j), (int)(y * height + i), Color.clear);
                     }
                 }
-                _tempCache.Apply();
-                this.texture.Clear();
+                this._tempCache.Apply();
+                this._texture.Clear();
                 this._texture.DrawTexture(new Rect(0, 0, this.width, height), _tempCache);
             }
             else
@@ -118,42 +117,40 @@
         }
         public void Drag(Vector2 offset)
         {
-            int size = (int)Math.Abs(offset.x);
-            if (size != 0)
+            int length_x = (int)Math.Abs(offset.x);
+            if (length_x != 0)
             {
-                RenderTexture.active = this.texture;
-                Debug.Log("x:" + offset.x);
+                RenderTexture.active = this._texture;
                 if (offset.x < 0)//→
                 {
-                    this._tempCache.ReadPixels(new Rect(0, 0, size, height), width - size, 0);
-                    this._tempCache.ReadPixels(new Rect(size, 0, width - size, height), 0, 0);
+                    this._tempCache.ReadPixels(new Rect(0, 0, length_x, height), width - length_x, 0);
+                    this._tempCache.ReadPixels(new Rect(length_x, 0, width - length_x, height), 0, 0);
                 }
                 else if (offset.x > 0)//←
                 {
-                    this._tempCache.ReadPixels(new Rect(width - size, 0, size, height), 0, 0);
-                    this._tempCache.ReadPixels(new Rect(0, 0, width - size, height), size, 0);
+                    this._tempCache.ReadPixels(new Rect(width - length_x, 0, length_x, height), 0, 0);
+                    this._tempCache.ReadPixels(new Rect(0, 0, width - length_x, height), length_x, 0);
                 }
-                this._tempCache.Apply();
-                this.texture.Clear();
-                this._texture.DrawTexture(new Rect(0, 0, width, height), this._tempCache);
             }
-            size = (int)Math.Abs(offset.y);
-            if (size != 0)
+            int length_y = (int)Math.Abs(offset.y);
+            if (length_y != 0)
             {
-                RenderTexture.active = this.texture;
-                Debug.Log("y:" + offset.y);
-                if (offset.y < 0)//↑
+                RenderTexture.active = this._texture;
+                if (offset.y > 0)//↑
                 {
-                    this._tempCache.ReadPixels(new Rect(0, 0, width, size), 0, height - size);
-                    this._tempCache.ReadPixels(new Rect(0, size, width, height - size), 0, 0);
+                    this._tempCache.ReadPixels(new Rect(0, 0, width, length_y), 0, 0);
+                    this._tempCache.ReadPixels(new Rect(0, length_y, width, height - length_y), 0, length_y);
                 }
-                else if (offset.y > 0)//↓
+                else if (offset.y < 0)//↓
                 {
-                    this._tempCache.ReadPixels(new Rect(0, height - size, width, size), 0, 0);
-                    this._tempCache.ReadPixels(new Rect(0, 0, width, height - size), 0, size);
+                    this._tempCache.ReadPixels(new Rect(0, height - length_y, width, length_y), 0, height - length_y);
+                    this._tempCache.ReadPixels(new Rect(0, 0, width, height - length_y), 0, 0);
                 }
+            }
+            if (length_x != 0 || length_y != 0)
+            {
                 this._tempCache.Apply();
-                this.texture.Clear();
+                this._texture.Clear();
                 this._texture.DrawTexture(new Rect(0, 0, width, height), this._tempCache);
             }
         }

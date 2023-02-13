@@ -13,7 +13,7 @@
             {
                 return;
             }
-            GamingService.Logger.Log("Event:" + evtName + " args:" + evtData?.ToString());
+            Services.Console.WriteLine("Event:" + evtName + " args:" + evtData?.ToString());
             for (int i = handle.Count - 1; i >= 0; i--)
             {
                 SafeRun(handle[i], evtData);

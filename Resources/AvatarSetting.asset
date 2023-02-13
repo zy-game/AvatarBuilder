@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ec41d6f5b21bf94f8774e74460e1e01, type: 3}
+  m_Name: AvatarSetting
+  m_EditorClassIdentifier: Avatar.Editor:Gaming.Editor:AvatarSetting
+  address: 
+  organization: 
+  iconFolder: {fileID: 102900000, guid: 34e4b9bd63900e74bb45878fe5a1057a, type: 3}
+  elementsFolder: {fileID: 102900000, guid: 7e2a98425d4cbdb40bde1200c780e057, type: 3}
+  prefabFolder: {fileID: 102900000, guid: 65685d8ce7005b042a5255882b876a4f, type: 3}

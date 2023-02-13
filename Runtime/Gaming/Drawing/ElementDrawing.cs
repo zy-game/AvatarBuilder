@@ -97,16 +97,16 @@
                         DrawingData layer = new(string.Empty);
                         layer.ReadData(reader);
                         layers.Add(layer);
-                        GamingService.Events.Notice(EventNames.CREATE_LAYER_COMPLETED, layer.name);
+                        Services.Events.Notice(EventNames.CREATE_LAYER_COMPLETED, layer.name);
                     }
                     current = layers.LastOrDefault();
                     Apply();
-                    GamingService.Events.Notice(EventNames.IMPORT_GRAFFITI_DATA_COMPLETED);
+                    Services.Events.Notice(EventNames.IMPORT_GRAFFITI_DATA_COMPLETED);
                 }
             }
             if (state)
             {
-                GamingService.Events.Notice(EventNames.GRAFFITI_INITIALIZED_COMPLETED);
+                Services.Events.Notice(EventNames.GRAFFITI_INITIALIZED_COMPLETED);
                 GameObject.Find("Canvas/Drawing/RawImage").GetComponent<UnityEngine.UI.RawImage>().texture = render;
             }
             return state;
@@ -117,7 +117,7 @@
             gameObject = builder.GetElementObject(element);
             if (gameObject == null)
             {
-                GamingService.Events.Notice(EventNames.MESSAGE_NOTICE, "not find the element object");
+                Services.Events.Notice(EventNames.MESSAGE_NOTICE, "not find the element object");
                 return false;
             }
             original = builder.GetElementTexture(element);
@@ -137,11 +137,15 @@
             this.avatar.EnableElement(Element.Eyes);
             this.avatar.EnableElement(Element.Mouth);
             this.avatar.EnableElement(Element.Head);
-            this.avatar.EnableElement(Element.Shoes);
+            //this.avatar.EnableElement(Element.Shoes);
+            this.avatar.EnableElement(Element.Pupli);
+            this.avatar.EnableElement(Element.Ears);
+            this.avatar.EnableElement(Element.Undergarments);
+            this.avatar.EnableElement(Element.Eyelash);
             gameObject.GenericMeshCollider();
-            this.avatar.gameObject.ToCameraCenter();
-            gameObject.ToCameraCenter();
-            MonoBehaviourInstance.AddUpdate(OnUpdate);
+            this.avatar.gameObject.ToViewCenter();
+            gameObject.ToViewCenter();
+            Services.MonoBehaviour.AddUpdate(OnUpdate);
             this.SetPaintbrushColor(Color.red);
             this.SetPaintbrushType(PaintBrush.Pen);
             this.SetPaintbrushWidth(16);
@@ -244,6 +248,7 @@
             {
                 this.waitingRemove.Clear();
             }
+            Services.Console.WriteLine(hit.textureCoord);
             current.Drawing(hit.textureCoord.x, hit.textureCoord.y, paintType, this.paintTexture, paintSize);
             Apply();
         }
@@ -322,14 +327,14 @@
                 {
                     if (exception != null)
                     {
-                        GamingService.Logger.LogError(exception);
+                        Services.Console.WriteError(exception);
                         return;
                     }
                     this._changed = Changed.Saved;
-                    GamingService.Events.Notice(EventNames.SAVED_GRAFFITI_DATA_COMPLETED);
+                    Services.Events.Notice(EventNames.SAVED_GRAFFITI_DATA_COMPLETED);
                 });
             }
-            MonoBehaviourInstance.StartCor(Runnable_UploadGraffitiData());
+            Services.MonoBehaviour.StartCoroutine(Runnable_UploadGraffitiData());
         }
 
         public void ImportTexture(byte[] textureBytes)
@@ -340,21 +345,21 @@
             texture.LoadImage(textureBytes);
             current.texture.DrawTexture(new Rect(0, 0, current.width, current.height), texture);
             Apply();
-            GamingService.Events.Notice(EventNames.IMPORT_GRAFFITI_TEXTURE_COMPLETED);
+            Services.Events.Notice(EventNames.IMPORT_GRAFFITI_TEXTURE_COMPLETED);
         }
 
         public void NewLayer(string name)
         {
             if (layers.Count >= 5)
             {
-                GamingService.Events.Notice(EventNames.MESSAGE_NOTICE, "To reach the maximum number of floors");
+                Services.Events.Notice(EventNames.MESSAGE_NOTICE, "To reach the maximum number of floors");
                 return;
             }
             layers.Add(new DrawingData(original.width, original.height, name));
             SelectionLayer(name);
             //current.texture.DrawTexture(emptyTexture);
             Apply();
-            GamingService.Events.Notice(EventNames.CREATE_LAYER_COMPLETED, current.name);
+            Services.Events.Notice(EventNames.CREATE_LAYER_COMPLETED, current.name);
         }
 
         public void ResizeLayer(float size)
@@ -377,7 +382,7 @@
             layers.Remove(current);
             current = layers.LastOrDefault();
             Apply();
-            GamingService.Events.Notice(EventNames.DELETE_LAYER_COMPLETED, name);
+            Services.Events.Notice(EventNames.DELETE_LAYER_COMPLETED, name);
         }
 
         public void SelectionLayer(string name)
@@ -385,7 +390,7 @@
             DrawingData layer = layers.Find(x => x.name == name);
             if (layer == null)
             {
-                GamingService.Events.Notice(EventNames.MESSAGE_NOTICE, "not find the layer");
+                Services.Events.Notice(EventNames.MESSAGE_NOTICE, "not find the layer");
                 return;
             }
             current = layer;
@@ -460,7 +465,7 @@
 
         public void Dispose()
         {
-            MonoBehaviourInstance.RemoveUpdate(OnUpdate);
+            Services.MonoBehaviour.RemoveCallback(OnUpdate);
             this.builder.GetElementObject(element).DestroyMeshCollider();
             this.builder.SetElementTexture(element, original);
             this.avatar.EnableElement(element: Element.None);

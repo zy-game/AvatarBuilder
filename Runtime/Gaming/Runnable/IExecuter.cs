@@ -9,15 +9,15 @@ namespace Gaming.Runnable
     /// </summary>
     public interface IExecuter : IRefrence
     {
-        IEnumerator Execute(params object[] args);
+        void Execute(IRunnable runnable, params object[] args);
     }
 
     /// <summary>
     /// 有返回值执行器
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IExecuter<T> : IExecuter
+    public interface IExecuter<T> : IRefrence
     {
-        T target { get; }
+        void Execute(IRunnable<T> runnable, params object[] args);
     }
 }

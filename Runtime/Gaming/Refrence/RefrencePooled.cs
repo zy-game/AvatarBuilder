@@ -4,12 +4,11 @@ namespace Gaming
     using System;
     using System.Collections.Generic;
 
-    sealed class RefrencePooled
+    sealed class RefrenceService : Singleton<RefrenceService>
     {
-        private static Dictionary<Type, Queue<IRefrence>> map = new Dictionary<Type, Queue<IRefrence>>();
+        private Dictionary<Type, Queue<IRefrence>> map = new Dictionary<Type, Queue<IRefrence>>();
 
-
-        private static void EnsureRefrenceType(Type type)
+        private void EnsureRefrenceType(Type type)
         {
             if (type == null)
             {
@@ -25,9 +24,9 @@ namespace Gaming
             }
         }
 
-        public static T Require<T>() where T : IRefrence => (T)Require(typeof(T));
+        public T Require<T>() where T : IRefrence => (T)Require(typeof(T));
 
-        public static IRefrence Require(Type refrenceType)
+        public IRefrence Require(Type refrenceType)
         {
             EnsureRefrenceType(refrenceType);
             if (!map.TryGetValue(refrenceType, out Queue<IRefrence> queue))
@@ -42,7 +41,7 @@ namespace Gaming
         }
 
 
-        public static void Release(IRefrence refrence)
+        public void Release(IRefrence refrence)
         {
             if (refrence == null)
             {

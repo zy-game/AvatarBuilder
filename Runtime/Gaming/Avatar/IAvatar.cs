@@ -26,7 +26,7 @@
         /// </summary>
         /// <param name="skeleton">基础骨骼资源地址</param>
         /// <param name="address">服务器地址</param>
-        void Initialize<T>(string skeleton, string address) where T : IResourceLoader, new();
+        void Initialize(string skeleton, string address);
 
         /// <summary>
         /// 播放动画

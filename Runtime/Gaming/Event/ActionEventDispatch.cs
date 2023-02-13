@@ -14,12 +14,12 @@
         {
             try
             {
-                GamingService.Logger.Log("Event:" + evtName + " args:" + evtData?.ToString());
+                Services.Console.WriteLine("Event:" + evtName + " args:" + evtData?.ToString());
                 _callback(evtName, evtData);
             }
             catch (Exception e)
             {
-                GamingService.Logger.LogError(e);
+                Services.Console.WriteError(e);
             }
         }
 

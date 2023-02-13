@@ -6,10 +6,14 @@ using System.Threading.Tasks;
 
 namespace Gaming
 {
-    public abstract class Singleton<T> where T : class, IRefrence
+    public abstract class Singleton<T> where T : class, new()
     {
-        private static Lazy<T> _instance = new Lazy<T>(() => GamingService.Refrence.Require<T>());
+        private static Lazy<T> _instance = new Lazy<T>(Instantiate);
 
+        private static T Instantiate()
+        {
+            return new T();
+        }
         public static T instance
         {
             get

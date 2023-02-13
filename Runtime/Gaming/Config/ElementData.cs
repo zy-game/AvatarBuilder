@@ -36,6 +36,11 @@
         /// </summary>
         public string name;
 
+        /// <summary>
+        /// 分组名
+        /// </summary>
+        public string group;
+
         public void Dispose()
         {
         }

@@ -166,6 +166,7 @@ namespace Gaming.Transport
         public static IEnumerator RequestPublishingElementDatas(string address, Action<List<ElementData>, Exception> callback)
         {
             UnityWebRequest request = UnityWebRequest.Get(address + "avatar/api/v1/items?page=1&page_size=100&type=-1");
+            Services.Console.WriteLine(request.url);
             yield return request.SendWebRequest();
             if (!request.isDone || request.result != UnityWebRequest.Result.Success)
             {

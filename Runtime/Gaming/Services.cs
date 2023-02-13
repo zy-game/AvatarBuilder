@@ -1,8 +1,11 @@
 ﻿namespace Gaming
 {
+    using Gaming.Runnable;
     using System;
+    using System.Collections;
+    using UnityEngine;
 
-    public static class GamingService
+    public static class Services
     {
         public sealed class Refrence
         {
@@ -11,49 +14,49 @@
             /// </summary>
             /// <typeparam name="T"></typeparam>
             /// <returns></returns>
-            public static T Require<T>() where T : IRefrence => RefrencePooled.Require<T>();
+            public static T Require<T>() where T : IRefrence => RefrenceService.instance.Require<T>();
 
             /// <summary>
             /// 引用一个对象
             /// </summary>
             /// <param name="type"></param>
             /// <returns></returns>
-            public static IRefrence Require(Type type) => RefrencePooled.Require(type);
+            public static IRefrence Require(Type type) => RefrenceService.instance.Require(type);
 
             /// <summary>
             /// 回收一个对象
             /// </summary>
             /// <param name="refrence"></param>
-            public static void Release(IRefrence refrence) => RefrencePooled.Release(refrence);
+            public static void Release(IRefrence refrence) => RefrenceService.instance.Release(refrence);
         }
 
-        public sealed class Logger
+        public sealed class Console
         {
             /// <summary>
             /// 输出日志
             /// </summary>
             /// <param name="message"></param>
-            public static void Log(object message) => UnityEngine.Debug.Log(message);
+            public static void WriteLine(object message) => Debug.Log(message);
 
             /// <summary>
             /// 输出日志
             /// </summary>
             /// <param name="format"></param>
             /// <param name="args"></param>
-            public static void LogFormat(string format, params object[] args) => UnityEngine.Debug.LogFormat(format, args);
+            public static void WriteLineFormat(string format, params object[] args) => Debug.LogFormat(format, args);
 
             /// <summary>
             /// 输出错误日志
             /// </summary>
             /// <param name="message"></param>
-            public static void LogError(object message) => UnityEngine.Debug.LogError(message);
+            public static void WriteError(object message) => Debug.LogError(message);
 
             /// <summary>
             /// 输出错误日志
             /// </summary>
             /// <param name="format"></param>
             /// <param name="args"></param>
-            public static void LogErrorFormat(string format, params object[] args) => UnityEngine.Debug.LogErrorFormat(format, args);
+            public static void WriteErrorFormat(string format, params object[] args) => Debug.LogErrorFormat(format, args);
         }
 
         public sealed class Config
@@ -118,7 +121,7 @@
             /// <param name="isDecryption"></param>
             /// <param name="isDecomperss"></param>
             /// <returns></returns>
-            public static Runnable.IRunnable<T> ReadDataAsync<T>(string fileName, bool isDecryption = false, bool isDecomperss = false) => Files.FileSystem.instance.ReadAsync<T>(fileName, isDecryption, isDecomperss);
+            public static Runnable.IRunnable<byte[]> ReadDataAsync<T>(string fileName, bool isDecryption = false, bool isDecomperss = false) => Files.FileSystem.instance.ReadAsync(fileName, isDecryption, isDecomperss);
 
             /// <summary>
             /// 是否存在文件
@@ -183,7 +186,7 @@
             /// </summary>
             /// <param name="assetName"></param>
             /// <returns></returns>
-            public static Runnable.IRunnable<Gaming.Resource.IResContext> LoadAsset(string assetName) => Gaming.Resource.ResourceManager.instance.LoadAsset(assetName);
+            public static Runnable.IRunnable<Gaming.Resource.IResContext> LoadAssetAsync(string assetName) => Gaming.Resource.ResourceManager.instance.LoadAssetAsync(assetName);
 
             /// <summary>
             /// 回收资源
@@ -255,6 +258,34 @@
             /// </summary>
             /// <param name="type"></param>
             public static void Unsubscribe(Type type) => Event.EventSystem.instance.UnsubscribeDistribution(type);
+        }
+
+        public sealed class Execute
+        {
+            public static IRunnable Create() => Refrence.Require<ScheduleRunnable>();
+
+            public static IRunnable<T> Create<T>() => Refrence.Require<ScheduleRunnable<T>>();
+
+            public static void Runner(IRunnable runnable) => MonoBehaviour.StartCoroutine(runnable.Execute());
+
+            public static void Runner<T>(IRunnable<T> runnable, T args) => MonoBehaviour.StartCoroutine(runnable.Execute(args));
+        }
+
+        public sealed class MonoBehaviour
+        {
+            public static void AddUpdate(Action onUpdateCallback) => Extension.UnityCallback.instance.AddUpdate(onUpdateCallback);
+
+            public static void RemoveCallback(Action callback) => Extension.UnityCallback.instance.RemoveCallback(callback);
+
+            public static void AddFixedUpdate(Action callback) => Extension.UnityCallback.instance.AddFixedUpdate(callback);
+
+            public static void StartCoroutine(IEnumerator enumerator) => Extension.UnityCallback.instance.StartCoroutine(enumerator);
+
+            public static void StopCoroutine(IEnumerator enumerator) => Extension.UnityCallback.instance.StopCoroutine(enumerator);
+
+            public static void DestoryCallback(GameObject gameObject, Action action) => Extension.UnityCallback.ListenDestory(gameObject, action);
+
+            public static void DestoryCallback<T>(GameObject gameObject, Action<T> action, T args) => Extension.UnityCallback.ListenDestory(gameObject, action, args);
         }
     }
 }

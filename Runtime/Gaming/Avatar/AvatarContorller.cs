@@ -10,6 +10,7 @@ namespace Gaming.Avatar
     using Gaming.Extension;
     using Gaming.Event;
     using Gaming.Transport;
+    using Gaming.Runnable;
 
     public sealed class AvatarContorller : IAvatar
     {
@@ -19,10 +20,12 @@ namespace Gaming.Avatar
         private Camera mainCamera;
         private AvatarConfig config;
         private GameObject _skeleton;
-        private IResourceLoader loader;
         private float nowCamEulerX;
         private Vector3 mouseLeapPose;
+        private string bundleAddressable;
         private Vector3 rotationTargetPosition;
+
+
         private readonly int maxAngle = 90;
         private readonly int minAngle = -90;
         private readonly float rotateSpeed = 5;
@@ -73,9 +76,9 @@ namespace Gaming.Avatar
         /// </summary>
         public void Dispose()
         {
-            MonoBehaviourInstance.RemoveUpdate(RotationScreenView);
-            MonoBehaviourInstance.RemoveUpdate(MovementScreenView);
-            MonoBehaviourInstance.RemoveUpdate(ScaleScreenView);
+            Services.MonoBehaviour.RemoveCallback(RotationScreenView);
+            Services.MonoBehaviour.RemoveCallback(MovementScreenView);
+            Services.MonoBehaviour.RemoveCallback(ScaleScreenView);
             builder.Dispose();
             config.Dispose();
             config = null;
@@ -90,28 +93,30 @@ namespace Gaming.Avatar
         /// </summary>
         /// <param name="skeleton">基础骨骼模型资源地址</param>
         /// <param name="address">服务器地址</param>
-        public void Initialize<T>(string skeleton, string address) where T : IResourceLoader, new()
+        public void Initialize(string skeleton, string address)
         {
+            //todo  skeleton = https://xxx.beijing.aliyun.com/webgl/mesh_girl_001_skeleton.assetbundle
             this._address = address;
-            this.loader = new T();
+            this.bundleAddressable = skeleton.Substring(0, skeleton.LastIndexOf("/"));
+            this.bundleAddressable = bundleAddressable.Substring(0, bundleAddressable.LastIndexOf("/"));
+            IRunnable<IResContext> runnable = Services.Resource.LoadAssetAsync(GetAssetBundleAddressable(Path.GetFileName(skeleton)));
+            runnable.Then(OnLoadSkeletonObjectCompleted);
+        }
 
-            loader.LoadAssetAsync(skeleton, handle =>
+        private void OnLoadSkeletonObjectCompleted(IResContext context)
+        {
+            if (context == null || !context.EnsureSuccessful())
             {
-
-                _skeleton = handle.GetObject<GameObject>();
-                if (_skeleton == null)
-                {
-                    throw new Exception("basic skeleton not find");
-                }
-                _skeleton.transform.localScale = Vector3.one;
-                _skeleton.transform.rotation = Quaternion.Euler(Vector3.zero);
-                _skeleton.transform.position = Vector3.zero;
-                _skeleton.GetComponent<Animator>().enabled = false;
-                MonoBehaviourInstance.AddUpdate(RotationScreenView);
-                MonoBehaviourInstance.AddUpdate(MovementScreenView);
-                MonoBehaviourInstance.AddUpdate(ScaleScreenView);
-                GamingService.Events.Notice(EventNames.INITIALIZED_COMPLATED_EVENT);
-            });
+                throw new Exception("basic skeleton not find");
+            }
+            _skeleton = context.GetObject<GameObject>();
+            _skeleton.transform.localScale = Vector3.one;
+            _skeleton.transform.rotation = Quaternion.Euler(Vector3.zero);
+            _skeleton.transform.position = Vector3.zero;
+            Services.MonoBehaviour.AddUpdate(RotationScreenView);
+            Services.MonoBehaviour.AddUpdate(MovementScreenView);
+            Services.MonoBehaviour.AddUpdate(ScaleScreenView);
+            Services.Events.Notice(EventNames.INITIALIZED_COMPLATED_EVENT);
         }
 
 
@@ -229,6 +234,26 @@ namespace Gaming.Avatar
             return this.config.GetValue(element);
         }
 
+        private string GetAssetBundleAddressable(string bundleName)
+        {
+            bundleName = bundleName.ToLower();
+#if UNITY_ANDROID
+            return this.bundleAddressable + "/android/" + bundleName;
+#elif UNITY_IPHONE
+            return this.bundleAddressable + "/ios/" + bundleName;
+#elif UNITY_WEBGL
+            return this.bundleAddressable + "/webgl/" + bundleName;
+#else
+            return this.bundleAddressable + "/windows/" + bundleName;
+#endif
+        }
+
+        private string GetDefaultTextureAddressable(string bundleName)
+        {
+            return this.bundleAddressable + "/elements/" + bundleName;
+        }
+
+        // ReSharper disable Unity.PerformanceAnalysis
         /// <summary>
         /// 设置部位模型
         /// </summary>
@@ -237,86 +262,80 @@ namespace Gaming.Avatar
         public void SetElementData(params ElementData[] elementDatas)
         {
             EnsureInitializeInterface();
-            if (elementDatas == null || elementDatas.Length <= 0)
+            Services.Console.WriteLine("element count:" + elementDatas.Length);
+            if (elementDatas.Length <= 0)
             {
                 return;
             }
-            bool[] state = new bool[elementDatas.Length];
+            IRunnable settingElementData = Services.Execute.Create();
             for (int i = 0; i < elementDatas.Length; i++)
             {
-                ChangeElementData(i, elementDatas[i]);
-            }
-            void ChangeElementData(int index, ElementData elementData)
-            {
+                ElementData elementData = elementDatas[i];
+                ElementData oldElementData = GetElementData(elementData.element);
+                if (elementData.element == Element.None)
+                {
+                    continue;
+                }
                 if (string.IsNullOrEmpty(elementData.model) || string.IsNullOrEmpty(elementData.texture))
                 {
-                    Debug.LogError("bad element data:" + Newtonsoft.Json.JsonConvert.SerializeObject(elementData));
-                    CheckCompleted(index);
-                    return;
+                    Services.Console.WriteErrorFormat("bad element data:{0}" , Newtonsoft.Json.JsonConvert.SerializeObject(elementData));
+                    continue;
                 }
-                ElementData oldElementData = GetElementData(elementData.element);
-                void SetModle()
+
+                if (oldElementData != null && oldElementData.model == elementData.model)
                 {
-                    if (oldElementData != null && oldElementData.model == elementData.model)
-                    {
-                        SetTexture();
-                        return;
-                    }
-                    //Debug.Log("set element model:" + elementData.model);
-                    loader.LoadAssetAsync(elementData.model, handle =>
-                    {
-                        if (handle == null)
-                        {
-                            return;
-                        }
-                        GameObject elementModle = handle.GetObject<GameObject>();
-                        if (elementModle == null)
-                        {
-                            throw new Exception("load resource failur. please check the resource is exist");
-                        }
-                        this.builder.SetElementModle(elementData.element, elementModle);
-                        this.config.SetElementData(elementData);
-                        SetTexture();
-                    });
+                    settingElementData.Then(OnSetElementTexture(elementData).Execute);
+                    continue;
                 }
-                void SetTexture()
-                {
-                    if (oldElementData != null && oldElementData.texture == elementData.texture)
-                    {
-                        CheckCompleted(index);
-                        return;
-                    }
-                    //Debug.Log("set element texture:" + elementData.model);
-                    loader.LoadAssetAsync(elementData.texture, handle =>
-                    {
-                        if (handle == null)
-                        {
-                            return;
-                        }
-                        Texture texture = handle.GetObject<Texture>();
-                        if (texture == null)
-                        {
-                            throw new Exception("load resource failur. please check the resource is exist");
-                        }
-                        this.builder.SetElementTexture(elementData.element, texture);
-                        this.config.SetElementData(elementData);
-                        _skeleton.ToCameraCenter();
-                        CheckCompleted(index);
-                    });
-                }
-                SetModle();
+               
+                settingElementData.Then(CreateSettingElementModelRunnable(elementData).Execute);
+                settingElementData.Then(OnSetElementTexture(elementData).Execute);
             }
-            void CheckCompleted(int index)
-            {
-                state[index] = true;
-                if (state.Where(x => x == false).Count() > 0)
-                {
-                    return;
-                }
-                GamingService.Events.Notice(EventNames.SET_ELEMENT_DATA_COMPLATED);
-            }
+            settingElementData.Then(Services.Events.Notice, EventNames.SET_ELEMENT_DATA_COMPLATED, Array.Empty<object>());
+            Services.Execute.Runner(settingElementData);
         }
 
+        IRunnable<IResContext> CreateSettingElementModelRunnable(ElementData elementData)
+        {
+            IRunnable<IResContext> modelLoadRunnable = Services.Resource.LoadAssetAsync(GetAssetBundleAddressable(elementData.model));
+            modelLoadRunnable.Then(OnLoadElementModelCompleted, elementData);
+            return modelLoadRunnable;
+        }
+
+        IRunnable<IResContext> OnSetElementTexture(ElementData elementData)
+        {
+            string url = elementData.texture.StartsWith("http") ? elementData.texture : GetDefaultTextureAddressable(elementData.texture);
+            IRunnable<IResContext> elementTextureLoadRunnable = Services.Resource.LoadAssetAsync(url);
+            elementTextureLoadRunnable.Then(OnLoadElementTextureCompleted, elementData);
+            return elementTextureLoadRunnable;
+        }
+
+        void OnLoadElementModelCompleted(IResContext context, ElementData elementData)
+        {
+            if (context == null || !context.EnsureSuccessful())
+            {
+                Services.Console.WriteError("element model :" + elementData.element + " not find");
+                return;
+            }
+            Services.Console.WriteLine("set element model:" + elementData.element);
+            GameObject elementModle = context.GetObject<GameObject>();
+            this.builder.SetElementModle(elementData.element, elementModle);
+            this.config.SetElementData(elementData);
+        }
+
+        void OnLoadElementTextureCompleted(IResContext context, ElementData elementData)
+        {
+            if (context == null || !context.EnsureSuccessful())
+            {
+                Services.Console.WriteError("element texture :" + elementData.element + " not find:" + elementData.texture);
+                return;
+            }
+            Texture texture = context.GetObject<Texture2D>(this.builder.GetElementObject(elementData.element));
+            Services.Console.WriteLine("set element texture:" + elementData.element);
+            this.builder.SetElementTexture(elementData.element, texture);
+            this.config.SetElementData(elementData);
+            _skeleton.ToViewCenter();
+        }
         /// <summary>
         /// 清理指定部件
         /// </summary>
@@ -326,7 +345,7 @@ namespace Gaming.Avatar
             this.EnsureInitializeInterface();
             this.builder.DestoryElement(element);
             this.config.RemoveElement(element);
-            GamingService.Events.Notice(EventNames.CLEAR_ELMENT_DATA_COMPLATED, (int)element);
+            Services.Events.Notice(EventNames.CLEAR_ELMENT_DATA_COMPLATED, (int)element);
         }
 
         /// <summary>
@@ -339,7 +358,7 @@ namespace Gaming.Avatar
             this.EnsureInitializeInterface();
             this.config.name = configName;
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(this.config);
-            GamingService.Events.Notice(EventNames.EXPORT_AVATAR_CONFIG_COMPLATED, json);
+            Services.Events.Notice(EventNames.EXPORT_AVATAR_CONFIG_COMPLATED, json);
             return json;
         }
 
@@ -363,7 +382,7 @@ namespace Gaming.Avatar
                 this.SetElementData(elementData);
             }
             this.config = tempConfig;
-            GamingService.Events.Notice(EventNames.IMPORT_CONFIG_COMPLATED);
+            Services.Events.Notice(EventNames.IMPORT_CONFIG_COMPLATED);
         }
 
         /// <summary>
@@ -375,7 +394,7 @@ namespace Gaming.Avatar
         {
             if (element == Element.None)
             {
-                _skeleton.ToCameraCenter();
+                _skeleton.ToViewCenter();
                 return;
             }
             this.EnsureInitializeInterface();
@@ -413,7 +432,7 @@ namespace Gaming.Avatar
                 texture = new Texture2D(rt.width, rt.height, TextureFormat.ARGB32, false);
                 texture.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
                 texture.Apply();
-                _skeleton.ToCameraCenter();
+                _skeleton.ToViewCenter();
                 SetElementData(elementData);
                 Runnable_UploadIconAsset();
             }
@@ -422,7 +441,7 @@ namespace Gaming.Avatar
                 string fileName = element.ToString() + "_" + modleName + "_icon.png";
                 byte[] iconBytes = texture.EncodeToPNG();
                 WebService.RequestCreateFileData requestCreateTextureFileData = new WebService.RequestCreateFileData(fileName, iconBytes.GetMd5(), "image/png", "2", bytes.Length);
-                MonoBehaviourInstance.StartCor(WebService.UploadAsset(address, requestCreateTextureFileData, iconBytes, (response, exception) =>
+                Services.MonoBehaviour.StartCoroutine(WebService.UploadAsset(address, requestCreateTextureFileData, iconBytes, (response, exception) =>
                 {
                     if (exception != null)
                     {
@@ -437,7 +456,7 @@ namespace Gaming.Avatar
             {
                 string fileName = element.ToString() + "_" + modleName + ".png";
                 WebService.RequestCreateFileData requestCreateTextureFileData = new WebService.RequestCreateFileData(fileName, bytes.GetMd5(), "image/png", "2", bytes.Length);
-                MonoBehaviourInstance.StartCor(WebService.UploadAsset(address, requestCreateTextureFileData, bytes, (response, exception) =>
+                Services.MonoBehaviour.StartCoroutine(WebService.UploadAsset(address, requestCreateTextureFileData, bytes, (response, exception) =>
                 {
                     if (exception != null)
                     {
@@ -457,9 +476,9 @@ namespace Gaming.Avatar
                 createElementData.icon = upload_icon_response.data.url;
                 createElementData.texture = upload_texture_response.data.url;
                 createElementData.model = elementData.model;
-                GamingService.Events.Notice(EventNames.UPLOAD_ELEMENT_ASSET_COMPLATED, Newtonsoft.Json.JsonConvert.SerializeObject(createElementData));
+                Services.Events.Notice(EventNames.UPLOAD_ELEMENT_ASSET_COMPLATED, Newtonsoft.Json.JsonConvert.SerializeObject(createElementData));
             }
-            MonoBehaviourInstance.StartCor(Runnable_GenericIcon());
+            Services.MonoBehaviour.StartCoroutine(Runnable_GenericIcon());
         }
 
         /// <summary>
@@ -471,9 +490,9 @@ namespace Gaming.Avatar
             this.builder.Combine();
             this.builder.Clear();
 #if UNITY_WEBGL
-            GamingService.Events.Notice(EventNames.COMBINE_AVATAR_COMPLATED);
+            Services.Events.Notice(EventNames.COMBINE_AVATAR_COMPLATED);
 #else
-            GamingService.Events.Notice(EventNames.COMBINE_AVATAR_COMPLATED, basic);
+            Services.Events.Notice(EventNames.COMBINE_AVATAR_COMPLATED, this.gameObject);
 #endif
         }
 
@@ -499,7 +518,7 @@ namespace Gaming.Avatar
             {
                 return;
             }
-            gameObject.ToCameraCenter();
+            gameObject.ToViewCenter();
         }
     }
 }
