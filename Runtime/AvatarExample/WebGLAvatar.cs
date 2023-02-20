@@ -18,6 +18,7 @@ namespace Example
         public string skeleton;
         public string config;
     }
+
     public class WebGLAvatar : MonoBehaviour
     {
         public IAvatar avatar;
@@ -27,7 +28,7 @@ namespace Example
         public Texture2D paint;
 
         /// <summary>
-        /// ÊÂ¼ş
+        /// äº‹ä»¶
         /// </summary>
         [DllImport("__Internal")]
         private static extern void OnNotiflyEvent(string name, string data);
@@ -53,6 +54,7 @@ namespace Example
                     Gaming.Services.Events.Notice(Gaming.Event.EventNames.OPEN_FILE_COMPLATED, bytes);
                 }
             }
+
             Gaming.Services.MonoBehaviour.StartCoroutine(Runnable_ReadingFile());
         }
 
@@ -68,12 +70,14 @@ namespace Example
                 {
                     return;
                 }
+
                 if (evtData == null)
                 {
                     OnNotiflyEvent(evtName, "");
                     return;
                 }
-                OnNotiflyEvent(evtName, (string)evtData);
+
+                OnNotiflyEvent(evtName, evtData.ToString());
             }
         }
 
@@ -90,6 +94,7 @@ namespace Example
             {
                 return;
             }
+
             throw new Exception("the avatar is not initialized");
         }
 
@@ -100,21 +105,24 @@ namespace Example
             {
                 return;
             }
+
             throw new Exception("not initialized graffiti");
         }
 
         /// <summary>
-        /// ³õÊ¼»¯±à¼­Æ÷
+        /// åˆå§‹åŒ–ç¼–è¾‘å™¨
         /// </summary>
-        /// <param name="args">³õÊ¼»¯²ÎÊı</param>
+        /// <param name="args">åˆå§‹åŒ–å‚æ•°</param>
         public void Initialized(string args)
         {
             this.InitializedEventScheduler();
+
             void InitializedComplatedCallback(object args)
             {
                 this.isInitialized = true;
                 Gaming.Services.Events.Unregister(EventNames.INITIALIZED_COMPLATED_EVENT, InitializedComplatedCallback);
             }
+
             Gaming.Services.Events.Register(EventNames.INITIALIZED_COMPLATED_EVENT, InitializedComplatedCallback);
             Gaming.Services.Resource.SetResourceLoader<WebGLAssetLoader>();
             InitData initData = Newtonsoft.Json.JsonConvert.DeserializeObject<InitData>(args);
@@ -124,7 +132,7 @@ namespace Example
         }
 
         /// <summary>
-        /// ÇåÀí²¿¼ş
+        /// æ¸…ç†éƒ¨ä»¶
         /// </summary>
         /// <param name="element"></param>
         public void ClearElement(int element)
@@ -134,28 +142,38 @@ namespace Example
         }
 
         /// <summary>
-        /// µ¼³öÅäÖÃ
+        /// å°†éƒ¨ä½æ˜¾ç¤ºåœ¨è§†å›¾ä¸­å¿ƒ
         /// </summary>
-        /// <param name="configName">±£´æµÄÅäÖÃÃû</param>
+        public void ShowInView(int element)
+        {
+            this.EnsureAvatarInitialized();
+            avatar.ShowInView((Element)element);
+        }
+
+        /// <summary>
+        /// å¯¼å‡ºé…ç½®
+        /// </summary>
+        /// <param name="configName">ä¿å­˜çš„é…ç½®å</param>
         public void ExportConfig(string configName)
         {
             this.EnsureAvatarInitialized();
             avatar.ExportConfig(configName);
-
         }
+
         /// <summary>
-        /// »ñÈ¡²¿¼şÊı¾İ
+        /// è·å–éƒ¨ä»¶æ•°æ®
         /// </summary>
-        /// <param name="element">²¿Î»Ã¶¾Ù</param>
+        /// <param name="element">éƒ¨ä½æšä¸¾</param>
         public void GetElementData(int element)
         {
             this.EnsureAvatarInitialized();
             avatar.GetElementData((Element)element);
         }
+
         /// <summary>
-        /// µ¼ÈëÅäÖÃ
+        /// å¯¼å…¥é…ç½®
         /// </summary>
-        /// <param name="config">ÅäÖÃÊı¾İ</param>
+        /// <param name="config">é…ç½®æ•°æ®</param>
         public void ImportConfig(string config)
         {
             this.EnsureAvatarInitialized();
@@ -164,9 +182,9 @@ namespace Example
         }
 
         /// <summary>
-        /// ÉèÖÃ²¿¼şÄ£ĞÍ
+        /// è®¾ç½®éƒ¨ä»¶æ¨¡å‹
         /// </summary>
-        /// <param name="elementData">²¿Î»Êı¾İ</param>
+        /// <param name="elementData">éƒ¨ä½æ•°æ®</param>
         public void SetElementData(string elementData)
         {
             this.EnsureAvatarInitialized();
@@ -175,12 +193,13 @@ namespace Example
             {
                 throw new Exception("element data cannot be null");
             }
+
             Debug.Log("set avatar element data:" + elementData);
             avatar.SetElementData(element.ToArray());
         }
 
         /// <summary>
-        /// ºÏ²¢Avatar
+        /// åˆå¹¶Avatar
         /// </summary>
         public void Combine()
         {
@@ -188,27 +207,30 @@ namespace Example
             Debug.Log("combined avatar data");
             avatar.Combine();
         }
+
         /// <summary>
-        /// ÉÏ´«²¿¼ş×ÊÔ´
+        /// ä¸Šä¼ éƒ¨ä»¶èµ„æº
         /// </summary>
-        /// <param name="element">²¿¼şÎ»ÖÃ</param>
-        /// <param name="fileDataString">ÎÄ¼şÊı¾İ</param>
+        /// <param name="element">éƒ¨ä»¶ä½ç½®</param>
+        /// <param name="fileDataString">æ–‡ä»¶æ•°æ®</param>
         public void UploadAsset(int element)
         {
             this.EnsureAvatarInitialized();
+
             void Runnable_OpenFileComplated(object args)
             {
                 Gaming.Services.Events.Unregister(EventNames.OPEN_FILE_COMPLATED, Runnable_OpenFileComplated);
                 avatar.UploadElementAsset((Element)element, string.Empty, (byte[])args);
             }
+
             Gaming.Services.Events.Register(EventNames.OPEN_FILE_COMPLATED, Runnable_OpenFileComplated);
             OnSelectionFile();
         }
 
         /// <summary>
-        /// Ô¤ÀÀ
+        /// é¢„è§ˆ
         /// </summary>
-        /// <param name="element">²¿Î»Ã¶¾Ù</param>
+        /// <param name="element">éƒ¨ä½æšä¸¾</param>
         public void PreviewAsset(int element)
         {
             this.EnsureAvatarInitialized();
@@ -226,27 +248,27 @@ namespace Example
         }
 
         /// <summary>
-        /// Òş²Ø²¿Î»
+        /// éšè—éƒ¨ä½
         /// </summary>
         /// <param name="element"></param>
-        public void DisableElement(Element element)
+        public void DisableElement(int element)
         {
             this.EnsureAvatarInitialized();
-            this.avatar.DisableElement(element);
+            this.avatar.DisableElement((Element)element);
         }
 
         /// <summary>
-        /// ÏÔÊ¾²¿Î»
+        /// æ˜¾ç¤ºéƒ¨ä½
         /// </summary>
         /// <param name="element"></param>
-        public void EnableElement(Element element)
+        public void EnableElement(int element)
         {
             this.EnsureAvatarInitialized();
-            this.avatar.EnableElement(element);
+            this.avatar.EnableElement((Element)element);
         }
 
         /// <summary>
-        /// ²¿¼şÍ¿Ñ»
+        /// éƒ¨ä»¶æ¶‚é¸¦
         /// </summary>
         /// <param name="element"></param>
         public void ElementGraffiti(int element)
@@ -256,11 +278,13 @@ namespace Example
                 Gaming.Services.Events.Notice(EventNames.NOTICE_SAVED_GRAFFITI_DATA);
                 return;
             }
+
             if (paint == null)
             {
                 Gaming.Services.Events.Notice(EventNames.MESSAGE_NOTICE, "not find paint data");
                 return;
             }
+
             this.graffiti = new ElementDrawing();
             if (!this.graffiti.Initialized(iconCamera, this.avatar, paint, (Element)element))
             {
@@ -269,7 +293,7 @@ namespace Example
         }
 
         /// <summary>
-        /// ÍË³öÍ¿Ñ»
+        /// é€€å‡ºæ¶‚é¸¦
         /// </summary>
         public void ExitGraffiti()
         {
@@ -279,14 +303,15 @@ namespace Example
                 Gaming.Services.Events.Notice(EventNames.NOTICE_SAVED_GRAFFITI_DATA);
                 return;
             }
+
             this.graffiti.Dispose();
             this.graffiti = null;
         }
 
         /// <summary>
-        /// µ¼ÈëÍ¿Ñ»Êı¾İ
+        /// å¯¼å…¥æ¶‚é¸¦æ•°æ®
         /// </summary>
-        /// <param name="url">Êı¾İµØÖ·£¬Èç¹ûÎª¿ÕÔò´ò¿ª±¾µØÎÄ¼şä¯ÀÀÆ÷</param>
+        /// <param name="url">æ•°æ®åœ°å€ï¼Œå¦‚æœä¸ºç©ºåˆ™æ‰“å¼€æœ¬åœ°æ–‡ä»¶æµè§ˆå™¨</param>
         public void ImportGraffitiData(string url)
         {
             if (this.graffiti != null)
@@ -294,11 +319,13 @@ namespace Example
                 Gaming.Services.Events.Notice(EventNames.NOTICE_SAVED_GRAFFITI_DATA);
                 return;
             }
+
             if (paint == null)
             {
                 Gaming.Services.Events.Notice(EventNames.MESSAGE_NOTICE, "not find paint data");
                 return;
             }
+
             void Runnable_OpenFileComplated(object args)
             {
                 Gaming.Services.Events.Unregister(EventNames.OPEN_FILE_COMPLATED, Runnable_OpenFileComplated);
@@ -308,6 +335,7 @@ namespace Example
                     this.graffiti = null;
                 }
             }
+
             Gaming.Services.Events.Register(EventNames.OPEN_FILE_COMPLATED, Runnable_OpenFileComplated);
             if (!string.IsNullOrEmpty(url))
             {
@@ -319,9 +347,9 @@ namespace Example
         }
 
         /// <summary>
-        /// ±£´æÍ¿Ñ»Êı¾İ
+        /// ä¿å­˜æ¶‚é¸¦æ•°æ®
         /// </summary>
-        /// <param name="name">ÎÄ¼şÃû,Èç¹ûÎÄ¼şÎª¿ÕÔò²»±£´æÊı¾İ</param>
+        /// <param name="name">æ–‡ä»¶å,å¦‚æœæ–‡ä»¶ä¸ºç©ºåˆ™ä¸ä¿å­˜æ•°æ®</param>
         public void Save(string name)
         {
             this.EnsureInitializedGraffiti();
@@ -331,13 +359,14 @@ namespace Example
                 this.graffiti = null;
                 return;
             }
+
             this.graffiti.Save(name);
             this.graffiti.Dispose();
             this.graffiti = null;
         }
 
         /// <summary>
-        /// ·¢²¼Í¿Ñ»
+        /// å‘å¸ƒæ¶‚é¸¦
         /// </summary>
         public void PublishGraffiti(string name)
         {
@@ -346,9 +375,9 @@ namespace Example
         }
 
         /// <summary>
-        /// ÉèÖÃ»­±Ê
+        /// è®¾ç½®ç”»ç¬”
         /// </summary>
-        /// <param name="brush">1:¸Ö±Ê 2:Ë¢×Ó 3:ÏğÆ¤éß 4:ÍÏ¶¯</param>
+        /// <param name="brush">1:é’¢ç¬” 2:åˆ·å­ 3:æ©¡çš®æª« 4:æ‹–åŠ¨</param>
         public void SetPaintbrushType(int brush)
         {
             this.EnsureInitializedGraffiti();
@@ -356,9 +385,9 @@ namespace Example
         }
 
         /// <summary>
-        /// ÉèÖÃ»­±ÊÑÕÉ«
+        /// è®¾ç½®ç”»ç¬”é¢œè‰²
         /// </summary>
-        /// <param name="hexadecimal">ÑÕÉ«Öµ</param>
+        /// <param name="hexadecimal">é¢œè‰²å€¼</param>
         public void SetPaintbrushColor(string hexadecimal)
         {
             this.EnsureInitializedGraffiti();
@@ -366,7 +395,7 @@ namespace Example
         }
 
         /// <summary>
-        /// ÉèÖÃ»­±Ê´óĞ¡
+        /// è®¾ç½®ç”»ç¬”å¤§å°
         /// </summary>
         /// <param name="width"></param>
         public void SetPaintbrushWidth(float width)
@@ -376,24 +405,26 @@ namespace Example
         }
 
         /// <summary>
-        /// ÔÚµ±Ç°Ñ¡ÖĞµÄÍ¼²ãÖĞµ¼ÈëÍ¿Ñ»Í¼Æ¬
+        /// åœ¨å½“å‰é€‰ä¸­çš„å›¾å±‚ä¸­å¯¼å…¥æ¶‚é¸¦å›¾ç‰‡
         /// </summary>
         public void ImportGraffitiTexture()
         {
             this.EnsureInitializedGraffiti();
+
             void Runnable_OpenFileComplated(object args)
             {
                 Gaming.Services.Events.Unregister(EventNames.OPEN_FILE_COMPLATED, Runnable_OpenFileComplated);
                 this.graffiti.ImportTexture((byte[])args);
             }
+
             Gaming.Services.Events.Register(EventNames.OPEN_FILE_COMPLATED, Runnable_OpenFileComplated);
             OnSelectionFile();
         }
 
         /// <summary>
-        /// ĞÂ½¨Í¼²ã
+        /// æ–°å»ºå›¾å±‚
         /// </summary>
-        /// <param name="name">Í¼²ãÃû</param>
+        /// <param name="name">å›¾å±‚å</param>
         public void NewLayer(string name)
         {
             this.EnsureInitializedGraffiti();
@@ -401,9 +432,9 @@ namespace Example
         }
 
         /// <summary>
-        /// Ñ¡ÖĞÍ¼²ã
+        /// é€‰ä¸­å›¾å±‚
         /// </summary>
-        /// <param name="name">ÒªÑ¡ÖĞµÄÍ¼²ãÃû</param>
+        /// <param name="name">è¦é€‰ä¸­çš„å›¾å±‚å</param>
         public void SelectionLayer(string name)
         {
             this.EnsureInitializedGraffiti();
@@ -411,7 +442,7 @@ namespace Example
         }
 
         /// <summary>
-        /// É¾³ıÑ¡ÖĞÍ¼²ã
+        /// åˆ é™¤é€‰ä¸­å›¾å±‚
         /// </summary>
         public void DeleteLayer()
         {
@@ -420,9 +451,9 @@ namespace Example
         }
 
         /// <summary>
-        /// ÉèÖÃÑ¡ÖĞÍ¼²ãÍ¸Ã÷¶È
+        /// è®¾ç½®é€‰ä¸­å›¾å±‚é€æ˜åº¦
         /// </summary>
-        /// <param name="alpha">Í¸Ã÷¶È </param>
+        /// <param name="alpha">é€æ˜åº¦ </param>
         public void SetLayerAlpha(float alpha)
         {
             this.EnsureInitializedGraffiti();
@@ -430,7 +461,7 @@ namespace Example
         }
 
         /// <summary>
-        /// ÉèÖÃÍ¼²ãËõ·Å´óĞ¡
+        /// è®¾ç½®å›¾å±‚ç¼©æ”¾å¤§å°
         /// </summary>
         /// <param name="size"></param>
         public void SetLayerSize(float size)
@@ -440,13 +471,13 @@ namespace Example
         }
 
         /// <summary>
-        /// ³·Ïú
+        /// æ’¤é”€
         /// </summary>
-        /// <param name="isBackup">true:ºóÍË£¬flase:Ç°½ø</param>
-        public void Undo(bool isBackup)
+        /// <param name="isBackup">0:åé€€ï¼Œ1:å‰è¿›</param>
+        public void Undo(int isBackup)
         {
             this.EnsureInitializedGraffiti();
-            this.graffiti.UndoRecord(isBackup);
+            this.graffiti.UndoRecord(isBackup == 0);
         }
     }
 }

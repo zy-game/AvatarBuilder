@@ -10,7 +10,6 @@ using Gaming.Event;
 
 namespace Example
 {
-
     public class AvatarExample : MonoBehaviour
     {
         public WebGLAvatar avatar;
@@ -51,10 +50,12 @@ namespace Example
             {
                 return;
             }
+
             if (!layers.Contains(args.ToString()))
             {
                 return;
             }
+
             layers.Remove(args.ToString());
             InitializedDropdown("Drawing/layers", layers, args => { avatar.SelectionLayer(layers[args]); });
         }
@@ -70,10 +71,12 @@ namespace Example
             {
                 return;
             }
+
             if (layers.Contains(args.ToString()))
             {
                 return;
             }
+
             layers.Add(args.ToString());
             InitializedDropdown("Drawing/layers", layers, args => { avatar.SelectionLayer(layers[args]); });
         }
@@ -90,8 +93,10 @@ namespace Example
             {
                 return;
             }
+
             avatar.SetElementData(Newtonsoft.Json.JsonConvert.SerializeObject(elements));
         }
+
         void InitializedDropdown(string name, List<string> items, UnityEngine.Events.UnityAction<int> callback)
         {
             Dropdown component = this.transform.Find(name).GetComponent<Dropdown>();
@@ -100,10 +105,12 @@ namespace Example
             component.onValueChanged.RemoveAllListeners();
             component.onValueChanged.AddListener(callback);
         }
+
         public void Undo()
         {
-            avatar.Undo(this.transform.Find("Drawing/Toggle").GetComponent<Toggle>().isOn);
+            avatar.Undo(this.transform.Find("Drawing/Toggle").GetComponent<Toggle>().isOn ? 0 : 1);
         }
+
         public void Save()
         {
             void SaveGraffiti(object args)
@@ -111,6 +118,7 @@ namespace Example
                 Gaming.Services.Events.Unregister(EventNames.NOTICE_SAVED_GRAFFITI_DATA, SaveGraffiti);
                 avatar.Save("testGraffiti");
             }
+
             Gaming.Services.Events.Register(EventNames.NOTICE_SAVED_GRAFFITI_DATA, SaveGraffiti);
             avatar.ExitGraffiti();
         }

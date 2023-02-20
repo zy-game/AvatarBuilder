@@ -17,7 +17,9 @@ namespace Gaming.Avatar
 
         private GameObject _basic;
         private Dictionary<Element, GameObject> allModles;
+
         private SkinnedMeshRenderer combineSkinnedRenderer;
+
         //private Dictionary<Element, GameObject> combineModles;
         public AvatarBuilder(GameObject basicModle)
         {
@@ -47,6 +49,7 @@ namespace Gaming.Avatar
                     ci.subMeshIndex = sub;
                     combineInstances.Add(ci);
                 }
+
                 // Collect bones
                 for (int j = 0; j < smr.bones.Length; j++)
                 {
@@ -61,6 +64,7 @@ namespace Gaming.Avatar
                     }
                 }
             }
+
             Material newMaterial = new Material(materials[0].shader);
             List<Texture2D> Textures = new List<Texture2D>();
             for (int i = 0; i < materials.Count; i++)
@@ -81,6 +85,7 @@ namespace Gaming.Avatar
                 {
                     uvb[k] = new Vector2((uva[k].x * uvs[j].width) + uvs[j].x, (uva[k].y * uvs[j].height) + uvs[j].y);
                 }
+
                 oldUV.Add(combineInstances[j].mesh.uv);
                 combineInstances[j].mesh.uv = uvb;
             }
@@ -91,17 +96,19 @@ namespace Gaming.Avatar
             {
                 GameObject.DestroyImmediate(oldSKinned);
             }
+
             combineSkinnedRenderer = _basic.AddComponent<SkinnedMeshRenderer>();
             combineSkinnedRenderer.sharedMesh = new Mesh();
             combineSkinnedRenderer.sharedMesh.name = "runtime_combine_mesh";
-            combineSkinnedRenderer.sharedMesh.CombineMeshes(combineInstances.ToArray(), true, false);// Combine meshes
+            combineSkinnedRenderer.sharedMesh.CombineMeshes(combineInstances.ToArray(), true, false); // Combine meshes
             combineSkinnedRenderer.sharedMesh.UploadMeshData(true);
-            combineSkinnedRenderer.bones = bones.ToArray();// Use new bones
+            combineSkinnedRenderer.bones = bones.ToArray(); // Use new bones
             combineSkinnedRenderer.material = newMaterial;
             for (int i = 0; i < combineInstances.Count; i++)
             {
                 combineInstances[i].mesh.uv = oldUV[i];
             }
+
             Resources.UnloadUnusedAssets();
         }
 
@@ -113,6 +120,7 @@ namespace Gaming.Avatar
                 allModles.Remove(element);
                 //combineModles.Remove(element);
             }
+
             BonesData bones = BonesConfig.instance.GetConfig(element);
             allModles.Add(element, modle);
             if (bones == null)
@@ -121,42 +129,53 @@ namespace Gaming.Avatar
             }
             else
             {
-                Transform parent = _basic.transform.Find(bones.path);
+                Transform parent = _basic.transform.Find(bones.location_path);
                 if (parent == null)
                 {
-                    Debug.LogError("config error,not find:" + bones.path);
+                    Debug.LogError("config error,not find:" + bones.location_path);
                     GameObject.DestroyImmediate(modle);
                     return;
                 }
-                modle.transform.SetParent(_basic.transform.Find(bones.path));
+
+                modle.transform.SetParent(_basic.transform.Find(bones.location_path));
             }
+
             modle.transform.localPosition = Vector3.zero;
             modle.transform.localRotation = Quaternion.identity;
             modle.transform.localScale = Vector3.one;
-            // MeshRenderer[] renderer = modle.GetComponentsInChildren<MeshRenderer>();
-            // if (renderer != null)
-            // {
-            //     for (int i = 0; i < renderer.Length; i++)
-            //     {
-            //         foreach (var item in renderer[i].sharedMaterials)
-            //         {
-            //             item.shader = Shader.Find(item.shader.name);
-            //         }
-            //     }
-            // }
-            //
-            // SkinnedMeshRenderer[] skinned = modle.GetComponentsInChildren<SkinnedMeshRenderer>();
-            // if (skinned == null || skinned.Length <= 0)
-            // {
-            //     return;
-            // }
-            // for (int i = 0; i < skinned.Length; i++)
-            // {
-            //     foreach (var item in skinned[i].sharedMaterials)
-            //     {
-            //         item.shader = Shader.Find(item.shader.name);
-            //     }
-            // }
+            MeshRenderer[] renderer = modle.GetComponentsInChildren<MeshRenderer>();
+            if (renderer != null)
+            {
+                for (int i = 0; i < renderer.Length; i++)
+                {
+                    foreach (var item in renderer[i].sharedMaterials)
+                    {
+                        Shader shader = Shader.Find(item.shader.name);
+                        if (shader != null)
+                        {
+                            item.shader = shader;
+                        }
+                    }
+                }
+            }
+
+            SkinnedMeshRenderer[] skinned = modle.GetComponentsInChildren<SkinnedMeshRenderer>();
+            if (skinned == null || skinned.Length <= 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < skinned.Length; i++)
+            {
+                foreach (var item in skinned[i].sharedMaterials)
+                {
+                    Shader shader = Shader.Find(item.shader.name);
+                    if (shader != null)
+                    {
+                        item.shader = shader;
+                    }
+                }
+            }
         }
 
         public void SetElementTexture(Element element, Texture texture)
@@ -166,11 +185,13 @@ namespace Gaming.Avatar
                 Services.Console.WriteLine("you need to set the model before you can set the texture:" + element);
                 return;
             }
+
             MeshRenderer renderer = elementObject.GetComponentInChildren<MeshRenderer>();
             if (renderer != null)
             {
                 renderer.sharedMaterial.mainTexture = texture;
             }
+
             SkinnedMeshRenderer skinnedMeshRenderer = elementObject.GetComponentInChildren<SkinnedMeshRenderer>();
             if (skinnedMeshRenderer != null)
             {
@@ -184,6 +205,7 @@ namespace Gaming.Avatar
             {
                 return;
             }
+
             GameObject.DestroyImmediate(gameObject);
             allModles.Remove(element);
         }
@@ -200,6 +222,7 @@ namespace Gaming.Avatar
             {
                 return gameObject;
             }
+
             return default;
         }
 
@@ -209,6 +232,7 @@ namespace Gaming.Avatar
             {
                 GameObject.DestroyImmediate(item);
             }
+
             allModles.Clear();
         }
 
@@ -219,12 +243,14 @@ namespace Gaming.Avatar
             {
                 return default;
             }
+
             MeshRenderer renderer = gameObject.GetComponentInChildren<MeshRenderer>();
             if (renderer == null)
             {
                 SkinnedMeshRenderer skinnedMeshRenderer = gameObject.GetComponentInChildren<SkinnedMeshRenderer>();
                 return (Texture2D)skinnedMeshRenderer.sharedMaterial.mainTexture;
             }
+
             return (Texture2D)renderer.sharedMaterial.mainTexture;
         }
 
@@ -245,8 +271,10 @@ namespace Gaming.Avatar
                 {
                     item.SetActive(false);
                 }
+
                 return;
             }
+
             if (allModles.TryGetValue(element, out GameObject obj))
             {
                 obj.SetActive(false);
@@ -261,8 +289,10 @@ namespace Gaming.Avatar
                 {
                     item.SetActive(true);
                 }
+
                 return;
             }
+
             if (allModles.TryGetValue(element, out GameObject obj))
             {
                 obj.SetActive(true);

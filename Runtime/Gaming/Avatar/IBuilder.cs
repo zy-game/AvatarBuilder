@@ -4,67 +4,67 @@ namespace Gaming.Avatar
     using System;
     using UnityEngine;
     /// <summary>
-    /// ×é×°Æ÷
+    /// ç»„è£…å™¨
     /// </summary>
     public interface IBuilder : IRefrence
     {
         /// <summary>
-        /// ÉèÖÃ²¿¼şÄ£ĞÍ
+        /// è®¾ç½®éƒ¨ä»¶æ¨¡å‹
         /// </summary>
         /// <param name="element"></param>
         /// <param name="modle"></param>
         void SetElementModle(Element element, GameObject modle);
 
         /// <summary>
-        /// ÉèÖÃ²¿¼şÍ¼Æ¬
+        /// è®¾ç½®éƒ¨ä»¶å›¾ç‰‡
         /// </summary>
         /// <param name="element"></param>
         /// <param name="texture"></param>
         void SetElementTexture(Element element, Texture texture);
 
         /// <summary>
-        /// É¾³ı²¿¼ş
+        /// åˆ é™¤éƒ¨ä»¶
         /// </summary>
         /// <param name="element"></param>
         void DestoryElement(Element element);
 
         /// <summary>
-        /// »ñÈ¡²¿Î»Ä£ĞÍ
+        /// è·å–éƒ¨ä½æ¨¡å‹
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>
         GameObject GetElementObject(Element element);
 
         /// <summary>
-        /// »ñÈ¡²¿Î»Ä£ĞÍÌùÍ¼
+        /// è·å–éƒ¨ä½æ¨¡å‹è´´å›¾
         /// </summary>
         /// <param name="element"></param>
         /// <returns></returns>
         Texture2D GetElementTexture(Element element);
 
         /// <summary>
-        /// ºÏ²¢²¿¼ş
+        /// åˆå¹¶éƒ¨ä»¶
         /// </summary>
         void Combine();
 
         /// <summary>
-        /// ÇåÀíËùÓĞ²¿¼şÄ£ĞÍ
+        /// æ¸…ç†æ‰€æœ‰éƒ¨ä»¶æ¨¡å‹
         /// </summary>
         void Clear();
 
         /// <summary>
-        /// ²ğ·ÖºÏ²¢Ä£ĞÍ
+        /// æ‹†åˆ†åˆå¹¶æ¨¡å‹
         /// </summary>
         void UnCombine();
 
         /// <summary>
-        /// Òş²Ø²¿¼ş
+        /// éšè—éƒ¨ä»¶
         /// </summary>
         /// <param name="element"></param>
         void DisableElement(Element element);
 
         /// <summary>
-        /// ÏÔÊ¾²¿¼ş
+        /// æ˜¾ç¤ºéƒ¨ä»¶
         /// </summary>
         /// <param name="element"></param>
         void EnableElement(Element element);

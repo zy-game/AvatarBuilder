@@ -2,7 +2,7 @@
     "name": "com.zygame.avatar",
     "displayName": "AvatarBuilder",
     "description": "my change clothes!",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "unity": "2018.3",
     "license": "MIT",
     "dependencies": {}

@@ -36,29 +36,26 @@ namespace Gaming.Avatar
 
         public string address
         {
-            get
-            {
-                return _address;
-            }
+            get { return _address; }
         }
+
         public IBuilder builder
         {
-            get
-            {
-                return _builder;
-            }
+            get { return _builder; }
         }
 
         public GameObject gameObject
         {
-            get
-            {
-                return _skeleton;
-            }
+            get { return _skeleton; }
         }
-        public AvatarContorller() : this(null) { }
 
-        public AvatarContorller(Camera mainCamera) : this(mainCamera, null) { }
+        public AvatarContorller() : this(null)
+        {
+        }
+
+        public AvatarContorller(Camera mainCamera) : this(mainCamera, null)
+        {
+        }
 
         public AvatarContorller(Camera mainCamera, Camera iconCamera)
         {
@@ -85,7 +82,6 @@ namespace Gaming.Avatar
             _builder = null;
             GameObject.DestroyImmediate(_skeleton);
             iconCamera = null;
-
         }
 
         /// <summary>
@@ -109,6 +105,7 @@ namespace Gaming.Avatar
             {
                 throw new Exception("basic skeleton not find");
             }
+
             _skeleton = context.GetObject<GameObject>();
             _skeleton.transform.localScale = Vector3.one;
             _skeleton.transform.rotation = Quaternion.Euler(Vector3.zero);
@@ -132,6 +129,7 @@ namespace Gaming.Avatar
             {
                 return;
             }
+
             float offset_x = Input.GetAxis("Mouse X");
             float offset_y = Input.GetAxis("Mouse Y");
             mouseLeapPose.x = Mathf.Lerp(mouseLeapPose.x, offset_x, 5 * Time.deltaTime);
@@ -142,12 +140,14 @@ namespace Gaming.Avatar
             {
                 iconCamera.transform.RotateAround(rotationTargetPosition, Vector3.up, mouseLeapPose.x * rotateSpeed);
             }
+
             nowCamEulerX = nowCamEulerX - mouseLeapPose.y * rotateSpeed;
             if (nowCamEulerX > maxAngle || nowCamEulerX < minAngle)
             {
                 nowCamEulerX = nowCamEulerX + mouseLeapPose.y * rotateSpeed;
                 mouseLeapPose.y = 0;
             }
+
             if (Mathf.Abs(-mouseLeapPose.y * rotateSpeed) < 0.02)
                 return;
             mainCamera.transform.RotateAround(Vector3.zero, mainCamera.transform.right, -mouseLeapPose.y * rotateSpeed);
@@ -164,6 +164,7 @@ namespace Gaming.Avatar
             {
                 return;
             }
+
             Vector3 p0 = mainCamera.transform.position;
             Vector3 p01 = p0 - Input.GetAxisRaw("Mouse X") * movementSpeed * mainCamera.transform.right;
             Vector3 p03 = p01 - Input.GetAxisRaw("Mouse Y") * movementSpeed * mainCamera.transform.up;
@@ -172,6 +173,7 @@ namespace Gaming.Avatar
             {
                 return;
             }
+
             iconCamera.transform.position = p03;
         }
 
@@ -181,6 +183,7 @@ namespace Gaming.Avatar
             {
                 return;
             }
+
             if (Input.mouseScrollDelta.y > 0 && mainCamera.fieldOfView > minFieldOfView)
             {
                 mainCamera.fieldOfView -= fieldOfViewInternal;
@@ -188,8 +191,10 @@ namespace Gaming.Avatar
                 {
                     return;
                 }
+
                 iconCamera.fieldOfView -= fieldOfViewInternal;
             }
+
             if (Input.mouseScrollDelta.y < 0 && mainCamera.fieldOfView < maxFieldOfView)
             {
                 mainCamera.fieldOfView += fieldOfViewInternal;
@@ -197,10 +202,10 @@ namespace Gaming.Avatar
                 {
                     return;
                 }
+
                 iconCamera.fieldOfView += fieldOfViewInternal;
             }
         }
-
 
 
         /// <summary>
@@ -213,10 +218,12 @@ namespace Gaming.Avatar
             {
                 throw new Exception("the avatar is not instance skeleton data");
             }
+
             if (this.builder == null)
             {
                 _builder = new AvatarBuilder(_skeleton);
             }
+
             if (this.config == null)
             {
                 this.config = new AvatarConfig();
@@ -267,6 +274,7 @@ namespace Gaming.Avatar
             {
                 return;
             }
+
             IRunnable settingElementData = Services.Execute.Create();
             for (int i = 0; i < elementDatas.Length; i++)
             {
@@ -276,38 +284,45 @@ namespace Gaming.Avatar
                 {
                     continue;
                 }
+
                 if (string.IsNullOrEmpty(elementData.model) || string.IsNullOrEmpty(elementData.texture))
                 {
-                    Services.Console.WriteErrorFormat("bad element data:{0}" , Newtonsoft.Json.JsonConvert.SerializeObject(elementData));
+                    Services.Console.WriteErrorFormat("bad element data:{0}", Newtonsoft.Json.JsonConvert.SerializeObject(elementData));
                     continue;
                 }
 
                 if (oldElementData != null && oldElementData.model == elementData.model)
                 {
-                    settingElementData.Then(OnSetElementTexture(elementData).Execute);
+                    settingElementData.Then(OnSetElementTexture, elementData);
                     continue;
                 }
-               
-                settingElementData.Then(CreateSettingElementModelRunnable(elementData).Execute);
-                settingElementData.Then(OnSetElementTexture(elementData).Execute);
+                if (oldElementData != null && oldElementData.model == elementData.model)
+                {
+                    settingElementData.Then(OnSetElementTexture, elementData);
+                    continue;
+                }
+                
+                settingElementData.Then(CreateSettingElementModelRunnable, elementData);
+                settingElementData.Then(OnSetElementTexture, elementData);
             }
+
             settingElementData.Then(Services.Events.Notice, EventNames.SET_ELEMENT_DATA_COMPLATED, Array.Empty<object>());
             Services.Execute.Runner(settingElementData);
         }
 
-        IRunnable<IResContext> CreateSettingElementModelRunnable(ElementData elementData)
+        IEnumerator CreateSettingElementModelRunnable(ElementData elementData)
         {
             IRunnable<IResContext> modelLoadRunnable = Services.Resource.LoadAssetAsync(GetAssetBundleAddressable(elementData.model));
             modelLoadRunnable.Then(OnLoadElementModelCompleted, elementData);
-            return modelLoadRunnable;
+            yield return modelLoadRunnable.Execute();
         }
 
-        IRunnable<IResContext> OnSetElementTexture(ElementData elementData)
+        IEnumerator OnSetElementTexture(ElementData elementData)
         {
             string url = elementData.texture.StartsWith("http") ? elementData.texture : GetDefaultTextureAddressable(elementData.texture);
             IRunnable<IResContext> elementTextureLoadRunnable = Services.Resource.LoadAssetAsync(url);
             elementTextureLoadRunnable.Then(OnLoadElementTextureCompleted, elementData);
-            return elementTextureLoadRunnable;
+            yield return elementTextureLoadRunnable.Execute();
         }
 
         void OnLoadElementModelCompleted(IResContext context, ElementData elementData)
@@ -317,6 +332,7 @@ namespace Gaming.Avatar
                 Services.Console.WriteError("element model :" + elementData.element + " not find");
                 return;
             }
+
             Services.Console.WriteLine("set element model:" + elementData.element);
             GameObject elementModle = context.GetObject<GameObject>();
             this.builder.SetElementModle(elementData.element, elementModle);
@@ -330,12 +346,14 @@ namespace Gaming.Avatar
                 Services.Console.WriteError("element texture :" + elementData.element + " not find:" + elementData.texture);
                 return;
             }
+
             Texture texture = context.GetObject<Texture2D>(this.builder.GetElementObject(elementData.element));
             Services.Console.WriteLine("set element texture:" + elementData.element);
             this.builder.SetElementTexture(elementData.element, texture);
             this.config.SetElementData(elementData);
             _skeleton.ToViewCenter();
         }
+
         /// <summary>
         /// 清理指定部件
         /// </summary>
@@ -379,8 +397,10 @@ namespace Gaming.Avatar
                 {
                     continue;
                 }
+
                 this.SetElementData(elementData);
             }
+
             this.config = tempConfig;
             Services.Events.Notice(EventNames.IMPORT_CONFIG_COMPLATED);
         }
@@ -397,6 +417,7 @@ namespace Gaming.Avatar
                 _skeleton.ToViewCenter();
                 return;
             }
+
             this.EnsureInitializeInterface();
             if (bytes != null && bytes.Length > 0)
             {
@@ -404,6 +425,7 @@ namespace Gaming.Avatar
                 texture.LoadImage(bytes);
                 this.builder.SetElementTexture(element, texture);
             }
+
             ShowInView(element);
         }
 
@@ -421,6 +443,7 @@ namespace Gaming.Avatar
             WebService.UploadAssetResponse upload_icon_response = null;
             WebService.UploadAssetResponse upload_texture_response = null;
             Texture2D texture = null;
+
             IEnumerator Runnable_GenericIcon()
             {
                 PreviewElement(element, bytes);
@@ -436,6 +459,7 @@ namespace Gaming.Avatar
                 SetElementData(elementData);
                 Runnable_UploadIconAsset();
             }
+
             void Runnable_UploadIconAsset()
             {
                 string fileName = element.ToString() + "_" + modleName + "_icon.png";
@@ -448,10 +472,12 @@ namespace Gaming.Avatar
                         Debug.LogError(exception);
                         return;
                     }
+
                     upload_icon_response = response;
                     Runnable_UploadTextureAsset();
                 }));
             }
+
             void Runnable_UploadTextureAsset()
             {
                 string fileName = element.ToString() + "_" + modleName + ".png";
@@ -468,6 +494,7 @@ namespace Gaming.Avatar
                     Runnable_CreateUserUoloadElementData();
                 }));
             }
+
             void Runnable_CreateUserUoloadElementData()
             {
                 ElementData createElementData = new ElementData();
@@ -478,6 +505,7 @@ namespace Gaming.Avatar
                 createElementData.model = elementData.model;
                 Services.Events.Notice(EventNames.UPLOAD_ELEMENT_ASSET_COMPLATED, Newtonsoft.Json.JsonConvert.SerializeObject(createElementData));
             }
+
             Services.MonoBehaviour.StartCoroutine(Runnable_GenericIcon());
         }
 
@@ -516,8 +544,10 @@ namespace Gaming.Avatar
             GameObject gameObject = this.builder.GetElementObject(element);
             if (gameObject == null)
             {
+                this.gameObject.ToViewCenter();
                 return;
             }
+
             gameObject.ToViewCenter();
         }
     }

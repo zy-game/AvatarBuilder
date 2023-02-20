@@ -22,6 +22,17 @@ namespace Gaming.Runnable
             return target;
         }
 
+        public static IRunnable Then<T2>(this IRunnable target, Func<T2, IEnumerator> callback, T2 args)
+        {
+            IEnumerator GetEnumerator()
+            {
+                yield return callback(args);
+            }
+
+            target.Then(GetEnumerator);
+            return target;
+        }
+
         public static IRunnable<T> Then<T>(this IRunnable<T> target, Action<T> callback)
         {
             IEnumerator GetEnumerator(T args)
@@ -34,12 +45,23 @@ namespace Gaming.Runnable
             return target;
         }
 
-        public static IRunnable<T> Then<T, T2>(this IRunnable<T> target,Action<T,T2>callback, T2 args)
+        public static IRunnable<T> Then<T, T2>(this IRunnable<T> target, Action<T, T2> callback, T2 args)
         {
             IEnumerator GetEnumerator(T result)
             {
-                callback(result,args);
+                callback(result, args);
                 yield break;
+            }
+
+            target.Then(GetEnumerator);
+            return target;
+        }
+
+        public static IRunnable<T> Then<T, T2>(this IRunnable<T> target, Func<T, T2, IEnumerator> callback, T2 args)
+        {
+            IEnumerator GetEnumerator(T result)
+            {
+                yield return callback(result, args);
             }
 
             target.Then(GetEnumerator);

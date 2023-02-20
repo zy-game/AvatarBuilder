@@ -6,8 +6,8 @@
 
     public sealed class BonesData : IConfigData
     {
-        public string path;
-        public Element element;
+        public string location_path;
+        public Element position_type;
 
         public void Dispose()
         {
@@ -50,8 +50,8 @@
             EnsureLoadConfig();
             RemoveConfig(element);
             BonesData config = Services.Refrence.Require<BonesData>();
-            config.element = element;
-            config.path = bonesPath;
+            config.position_type = element;
+            config.location_path = bonesPath;
             configs.Add(config);
         }
         public void RemoveConfig(Element element)
@@ -70,7 +70,7 @@
             BonesData config = null;
             for (int i = 0; i < configs.Count; i++)
             {
-                if (configs[i].element == element)
+                if (configs[i].position_type == element)
                 {
                     config = configs[i];
                     break;

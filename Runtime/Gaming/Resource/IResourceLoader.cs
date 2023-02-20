@@ -5,7 +5,7 @@ namespace Gaming.Resource
     using System;
 
     /// <summary>
-    /// ×ÊÔ´¼ÓÔØÆ÷
+    /// èµ„æºåŠ è½½å™¨
     /// </summary>
     public interface IResourceLoader : IRefrence
     {
